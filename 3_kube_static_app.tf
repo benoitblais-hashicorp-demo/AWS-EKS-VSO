@@ -44,10 +44,9 @@ spec:
   destination:
     create: true
     name: webapp-config-secret
-  rolloutRestart:
-    targets:
-      - kind: Deployment
-        name: demo-webapp
+  rolloutRestartTargets:
+    - kind: Deployment
+      name: demo-webapp
 EOF
   )
 }
