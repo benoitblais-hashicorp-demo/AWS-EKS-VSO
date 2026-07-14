@@ -555,7 +555,6 @@ The following resources are used by this module:
 
 - [aws_acm_certificate.public](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/acm_certificate) (resource)
 - [aws_acm_certificate_validation.public](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/acm_certificate_validation) (resource)
-- [aws_eip.nginx_ingress](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eip) (resource)
 - [aws_route53_record.public_validation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_record) (resource)
 - [aws_route53_record.web_dns_record](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_record) (resource)
 - [helm_release.nginx_ingress](https://registry.terraform.io/providers/hashicorp/helm/3.1.1/docs/resources/release) (resource)
@@ -572,7 +571,8 @@ The following resources are used by this module:
 - [kubernetes_service_account_v1.vault](https://registry.terraform.io/providers/hashicorp/kubernetes/3.0.1/docs/resources/service_account_v1) (resource)
 - [kubernetes_service_v1.demo_webapp](https://registry.terraform.io/providers/hashicorp/kubernetes/3.0.1/docs/resources/service_v1) (resource)
 - [random_string.identifier](https://registry.terraform.io/providers/hashicorp/random/3.8.1/docs/resources/string) (resource)
-- [time_sleep.eip_wait](https://registry.terraform.io/providers/hashicorp/time/0.13.1/docs/resources/sleep) (resource)
+- [time_sleep.helm_wait](https://registry.terraform.io/providers/hashicorp/time/0.13.1/docs/resources/sleep) (resource)
+- [time_sleep.nlb_wait](https://registry.terraform.io/providers/hashicorp/time/0.13.1/docs/resources/sleep) (resource)
 - [time_sleep.step_2](https://registry.terraform.io/providers/hashicorp/time/0.13.1/docs/resources/sleep) (resource)
 - [time_sleep.step_3](https://registry.terraform.io/providers/hashicorp/time/0.13.1/docs/resources/sleep) (resource)
 - [vault_auth_backend.kube_auth](https://registry.terraform.io/providers/hashicorp/vault/5.8.0/docs/resources/auth_backend) (resource)
@@ -588,6 +588,7 @@ The following resources are used by this module:
 - [aws_iam_session_context.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_session_context) (data source)
 - [aws_partition.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/partition) (data source)
 - [aws_route53_zone.demo](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/route53_zone) (data source)
+- [kubernetes_service_v1.nginx_ingress](https://registry.terraform.io/providers/hashicorp/kubernetes/3.0.1/docs/data-sources/service_v1) (data source)
 
 ## Outputs
 
