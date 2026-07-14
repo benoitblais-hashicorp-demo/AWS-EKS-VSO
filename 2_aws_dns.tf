@@ -65,13 +65,29 @@ resource "aws_acm_certificate_validation" "public" {
 # APPLICATION DNS MAPPING
 # ------------------------------------------------------------------------------
 
-# 5. Map the public demo subdomain directly to the pre-allocated NGINX Ingress Elastic IPs
+# 5. Wait for the NLB to be fully provisioned behind the scenes by AWS
+resource "time_sleep" "nlb_wait" {
+  count           = var.step_2 && var.public_hosted_zone != "" ? 1 : 0
+  depends_on      = [helm_release.nginx_ingress]
+  create_duration = "90s"
+}
+
+# 6. Retrieve the automatically generated Kubernetes load balancer hostname
+data "kubernetes_service_v1" "nginx_ingress" {
+  count      = var.step_2 && var.public_hosted_zone != "" ? 1 : 0
+  depends_on = [time_sleep.nlb_wait]
+  metadata {
+    name      = "ingress-nginx-controller"
+    namespace = kubernetes_namespace_v1.ingress_nginx[0].metadata.0.name
+  }
+}
+
+# 7. Map the public demo subdomain directly to the NLB's AWS ingress hostname
 resource "aws_route53_record" "web_dns_record" {
   count   = var.step_2 && var.public_hosted_zone != "" ? 1 : 0
   zone_id = data.aws_route53_zone.demo[0].zone_id
   name    = "${var.demo_subdomain}.${var.public_hosted_zone}"
-  type    = "A"
+  type    = "CNAME"
   ttl     = 300
-  # Directly resolving the pre-allocated EIPs attached to the NLB!
-  records = aws_eip.nginx_ingress[*].public_ip
+  records = [data.kubernetes_service_v1.nginx_ingress[0].status[0].load_balancer[0].ingress[0].hostname]
 }

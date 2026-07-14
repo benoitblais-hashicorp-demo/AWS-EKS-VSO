@@ -10,7 +10,7 @@ The configuration is deployed in three sequential steps controlled by boolean va
 
 - **Step 1 (default):** AWS VPC, EKS cluster, Vault namespace, and static KV secrets.
 - **Step 2:** Kubernetes tooling — nginx ingress, Route53 DNS and ACM Certificates, Uptycs EDR, VSO Helm chart, Vault Kubernetes auth backend, and RBAC bindings.
-- **Step 3:** Application deployment — VaultStaticSecret CRD, Go web application with Vault-mounted secrets, and automated pod restarter CronJob.
+- **Step 3:** Application deployment — VaultStaticSecret CRD, Go web application with Vault-mounted secrets
 
 ## Module and Repository Structure
 

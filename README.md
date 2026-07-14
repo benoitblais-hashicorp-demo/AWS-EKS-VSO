@@ -183,15 +183,14 @@ Once the application is running, here is how you can explain the integration flo
      in your editor. Point out the `mount: webapp` and `path: app/config` mappings.
      Explain to the audience that this is the developer-facing manifest: they simply
      to fetch, without needing to know any Vault API logic.
-5. **Pod Volume Mount (`3_kube_static_app.tf`)**:
+5. **Pod Environment Variables (`3_kube_static_app.tf`)**:
    - **Where:** AWS Console → EKS → Clusters → `<resources_prefix>-<random_id>-eks` → Resources → Workloads → Pods → Select a `demo-webapp` pod → YAML / Raw view.
-   - **What to say:** Scroll down to the `spec.containers.volumeMounts` block to
-     highlight where the application mounts the ephemeral directory (`/var/run/secrets/vault`).
-     Then, scroll down to the `spec.volumes` block to show how that specific volume
-     Kubernetes Secret.
+   - **What to say:** Scroll down to the `spec.containers.env` block to
+     highlight how standard environment variables are mapped directly from `valueFrom_secretKeyRef`.
+     Emphasize that the application has zero awareness of Vault or Kubernetes Secrets.
 6. **No Kubernetes Secrets Generated**:
    - **Where:** AWS Console → EKS → Clusters → `<resources_prefix>-<random_id>-eks` → Resources → Config and secrets.
-   - **What to say:** Filter by the `demo-go-web-vso` namespace. Prove to the audience that there are **no application secret objects** stored here. The only secrets present are standard Kubernetes service account tokens. The actual application secret remains entirely ephemeral.
+   - **What to say:** Filter by the `demo-go-web-vso` namespace. Show the audience the synced `webapp-config-secret` object stored here containing the Vault data.
 
 ### Secret Rotation Demo
 
@@ -211,15 +210,14 @@ This section walks through the deliberate secret rotation pattern that VSO enabl
 1. Quickly reload the demo web application — the **original message is likely still displayed**. This is expected:
    environment variables are bound to the pod at startup and are not live-reloaded while the pod is running.
    Vault still holds the updated secret, but the running pod retains the prior version in its
-   ephemeral volume.
+   running environment.
 
 #### Automated Pod Rotation
 
-1. To remove the need for manual console access, this demo provisions a Kubernetes `CronJob` that executes a `kubectl rollout restart deployment/demo-webapp` every 3 minutes.
-2. Wait for up to 3 minutes to allow the CronJob to trigger.
-3. As the deployment rolls over and replacement pods start, VSO re-authenticates to Vault, reads
-   the current secret version, and injects the new data into the pod's ephemeral volume.
-4. Reload the demo web application — the **new message from Vault is now displayed**.
+1. Because VSO is configured with the `rolloutRestart` capability on the `VaultStaticSecret`, it will automatically trigger a new deployment rollout as soon as it detects the Vault update (maximum 5 seconds).
+2. As the deployment rolls over and replacement pods start, Kubernetes
+   injects the updated Secret as environment variables.
+3. Reload the demo web application — the **new message from Vault is now displayed**.
 
 #### What this demonstrates
 
@@ -348,7 +346,7 @@ Documentation:
 
 - **Vault Enterprise Validation Errors:** The Vault Secrets Operator requires Vault to function and hard-validates this
   requirement by querying the `/sys/license/status` endpoint. If your pod's Vault policy does not grant `read` capability
-  to this endpoint, the volume mount will throw a `vault enterprise client validation failed` error, completely blocking Pod scheduling.
+  to this endpoint, the VSO operator logs will throw a `vault enterprise client validation failed` error, completely blocking Pod scheduling.
 - **Invalid Audience / Issuer Claims:** When mapping the Vault Kubernetes Auth backend against an EKS cluster, avoid hardcoding
   the `audience = "vault"` constraint on the role and set `disable_iss_validation = true` on the backend config. Short-lived
   Service Account tokens generated natively by EKS often omit specific audiences and rotate dynamic OIDC issuers, causing 403 Forbidden
@@ -557,7 +555,6 @@ The following resources are used by this module:
 
 - [aws_acm_certificate.public](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/acm_certificate) (resource)
 - [aws_acm_certificate_validation.public](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/acm_certificate_validation) (resource)
-- [aws_eip.nginx_ingress](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eip) (resource)
 - [aws_route53_record.public_validation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_record) (resource)
 - [aws_route53_record.web_dns_record](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_record) (resource)
 - [helm_release.nginx_ingress](https://registry.terraform.io/providers/hashicorp/helm/3.1.1/docs/resources/release) (resource)
@@ -574,7 +571,8 @@ The following resources are used by this module:
 - [kubernetes_service_account_v1.vault](https://registry.terraform.io/providers/hashicorp/kubernetes/3.0.1/docs/resources/service_account_v1) (resource)
 - [kubernetes_service_v1.demo_webapp](https://registry.terraform.io/providers/hashicorp/kubernetes/3.0.1/docs/resources/service_v1) (resource)
 - [random_string.identifier](https://registry.terraform.io/providers/hashicorp/random/3.8.1/docs/resources/string) (resource)
-- [time_sleep.eip_wait](https://registry.terraform.io/providers/hashicorp/time/0.13.1/docs/resources/sleep) (resource)
+- [time_sleep.helm_wait](https://registry.terraform.io/providers/hashicorp/time/0.13.1/docs/resources/sleep) (resource)
+- [time_sleep.nlb_wait](https://registry.terraform.io/providers/hashicorp/time/0.13.1/docs/resources/sleep) (resource)
 - [time_sleep.step_2](https://registry.terraform.io/providers/hashicorp/time/0.13.1/docs/resources/sleep) (resource)
 - [time_sleep.step_3](https://registry.terraform.io/providers/hashicorp/time/0.13.1/docs/resources/sleep) (resource)
 - [vault_auth_backend.kube_auth](https://registry.terraform.io/providers/hashicorp/vault/5.8.0/docs/resources/auth_backend) (resource)
@@ -590,6 +588,7 @@ The following resources are used by this module:
 - [aws_iam_session_context.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_session_context) (data source)
 - [aws_partition.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/partition) (data source)
 - [aws_route53_zone.demo](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/route53_zone) (data source)
+- [kubernetes_service_v1.nginx_ingress](https://registry.terraform.io/providers/hashicorp/kubernetes/3.0.1/docs/data-sources/service_v1) (data source)
 
 ## Outputs
 
