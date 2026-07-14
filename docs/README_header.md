@@ -187,9 +187,9 @@ Once the application is running, here is how you can explain the integration flo
    - **What to say:** Scroll down to the `spec.containers.env` block to
      highlight how standard environment variables are mapped directly from `valueFrom_secretKeyRef`.
      Emphasize that the application has zero awareness of Vault or Kubernetes Secrets.
-6. **No Kubernetes Secrets Generated**:
+6. **Kubernetes Secret Synced via VSO**:
    - **Where:** AWS Console → EKS → Clusters → `<resources_prefix>-<random_id>-eks` → Resources → Config and secrets.
-   - **What to say:** Filter by the `demo-go-web-vso` namespace. Show the audience the synced `webapp-config-secret` object stored here containing the Vault data.
+   - **What to say:** Filter by the `demo-go-web-vso` namespace. Show the audience the synced `webapp-config-secret` Kubernetes Secret object. Explain that VSO automatically created and synchronizes this secret natively from Vault.
 
 ### Secret Rotation Demo
 
