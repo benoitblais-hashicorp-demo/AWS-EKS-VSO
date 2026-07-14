@@ -46,31 +46,21 @@ resource "kubernetes_namespace_v1" "ingress_nginx" {
 # NGINX INGRESS CONTROLLER & LOAD BALANCING
 # ------------------------------------------------------------------------------
 
-# 3. Provision static AWS Elastic IPs to attach to the Network Load Balancer (NLB)
-resource "aws_eip" "nginx_ingress" {
-  count = var.step_2 ? 3 : 0
-  depends_on = [
-    time_sleep.step_2,
-    kubernetes_namespace_v1.demo_app,
-  ]
-}
-
-# 4. Wait temporarily to let AWS API cleanly allocate the EIPs before Helm uses them
-resource "time_sleep" "eip_wait" {
+# 3. Wait temporarily to let Kubernetes settle before applying Helm
+resource "time_sleep" "helm_wait" {
   count = var.step_2 ? 1 : 0
   depends_on = [
-    time_sleep.step_2,
-    aws_eip.nginx_ingress,
+    kubernetes_namespace_v1.demo_app,
   ]
-  destroy_duration = "60s"
+  create_duration = "10s"
 }
 
-# 5. Deploy the NGINX Ingress Controller mapped to an AWS NLB using the static EIPs
+# 4. Deploy the NGINX Ingress Controller mapped to an AWS NLB
 resource "helm_release" "nginx_ingress" {
   count = var.step_2 ? 1 : 0
   depends_on = [
     time_sleep.step_2,
-    time_sleep.eip_wait,
+    time_sleep.helm_wait,
     kubernetes_namespace_v1.ingress_nginx,
   ]
   name            = "ingress-nginx"
@@ -89,7 +79,6 @@ controller:
       ${var.public_hosted_zone != "" ? format("service.beta.kubernetes.io/aws-load-balancer-ssl-cert: \"%s\"", try(aws_acm_certificate_validation.public[0].certificate_arn, "")) : "# TLS disabled"}
       ${var.public_hosted_zone != "" ? "service.beta.kubernetes.io/aws-load-balancer-ssl-ports: \"443\"" : ""}
       service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: true
-      service.beta.kubernetes.io/aws-load-balancer-eip-allocations: ${aws_eip.nginx_ingress[0].id},${aws_eip.nginx_ingress[1].id},${aws_eip.nginx_ingress[2].id}
       service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
       service.beta.kubernetes.io/aws-load-balancer-type: nlb
     type: LoadBalancer
@@ -103,7 +92,7 @@ EOT
 # VAULT AUTHENTICATION (KUBERNETES SERVICE ACCOUNT & RBAC)
 # ------------------------------------------------------------------------------
 
-# 6. Create the 'vault-auth' Kubernetes Service Account used by the application to authenticate with Vault
+# 5. Create the 'vault-auth' Kubernetes Service Account used by the application to authenticate with Vault
 resource "kubernetes_service_account_v1" "vault" {
   count      = var.step_2 ? 1 : 0
   depends_on = [time_sleep.step_2]
@@ -114,7 +103,7 @@ resource "kubernetes_service_account_v1" "vault" {
   automount_service_account_token = true
 }
 
-# 7. Create a long-lived Service Account Token Secret for the Vault auth Service Account
+# 6. Create a long-lived Service Account Token Secret for the Vault auth Service Account
 resource "kubernetes_secret_v1" "vault_token" {
   count      = var.step_2 ? 1 : 0
   depends_on = [time_sleep.step_2]
@@ -129,7 +118,7 @@ resource "kubernetes_secret_v1" "vault_token" {
   wait_for_service_account_token = true
 }
 
-# 8. Bind the 'system:auth-delegator' ClusterRole to the Service Account so Vault can verify tokens
+# 7. Bind the 'system:auth-delegator' ClusterRole to the Service Account so Vault can verify tokens
 resource "kubernetes_cluster_role_binding_v1" "vault" {
   count      = var.step_2 ? 1 : 0
   depends_on = [time_sleep.step_2]
